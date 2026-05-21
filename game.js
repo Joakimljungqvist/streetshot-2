@@ -478,8 +478,8 @@ class CourtScene extends Phaser.Scene {
     // ====================================================================
     const floorTopY = horizonY;
     const floorBottomY = H;
-    const floorTopWidth = 340;        // wider at the far end (more "court" visible)
-    const floorBottomWidth = W * 2.4; // wider at the near end
+    const floorTopWidth = 440;        // wider at the far end (court spans more of screen)
+    const floorBottomWidth = W * 3.0; // much wider at the near end
 
     const floor = this.add.graphics();
     // WOODEN COURT FLOOR — warm tan, painted lines, parquet hint
@@ -508,14 +508,14 @@ class CourtScene extends Phaser.Scene {
     // PAINTED COURT LINES
     // 3-point arc — flattened ellipse in perspective
     floor.lineStyle(3, 0xffffff, 0.85);
-    floor.strokeEllipse(cx, floorTopY + 110, 480, 110);
+    floor.strokeEllipse(cx, floorTopY + 130, 620, 140);
     // Free-throw line / key boundaries (a rectangle in perspective near top)
     floor.lineStyle(2.5, 0xffffff, 0.8);
     // The "key" trapezoid: wider at the front (player side), narrower at the back (hoop side)
     const keyTopY = floorTopY + 10;
     const keyBottomY = floorTopY + 160;
-    const keyTopW = 100;
-    const keyBottomW = 170;
+    const keyTopW = 130;
+    const keyBottomW = 220;
     floor.beginPath();
     floor.moveTo(cx - keyTopW/2, keyTopY);
     floor.lineTo(cx + keyTopW/2, keyTopY);
@@ -545,32 +545,32 @@ class CourtScene extends Phaser.Scene {
     // ====================================================================
     this.hoopX = cx;
     this.hoopY = 200;
-    const rimRadius = 22;
+    const rimRadius = 36;
 
     // Pole
     const pole = this.add.graphics();
     pole.fillStyle(0x333344, 1);
     pole.fillRect(this.hoopX - 4, this.hoopY - 110, 8, 120);
 
-    // Backboard — sized correctly relative to the rim (~3x rim width, ~1.5x rim diameter)
-    const bbW = 100, bbH = 62;
-    const backboard = this.add.rectangle(this.hoopX, this.hoopY - 32, bbW, bbH, 0xffffff, 0.95);
-    backboard.setStrokeStyle(2, 0x222233);
-    const bbInner = this.add.rectangle(this.hoopX, this.hoopY - 22, 34, 26, 0xffffff, 0);
-    bbInner.setStrokeStyle(1.5, char.color);
+    // Backboard — sized relative to the rim (~2.5x rim diameter wide, ~1.5x rim diameter tall)
+    const bbW = 180, bbH = 108;
+    const backboard = this.add.rectangle(this.hoopX, this.hoopY - 50, bbW, bbH, 0xffffff, 0.95);
+    backboard.setStrokeStyle(2.5, 0x222233);
+    const bbInner = this.add.rectangle(this.hoopX, this.hoopY - 36, 60, 44, 0xffffff, 0);
+    bbInner.setStrokeStyle(2, char.color);
 
-    // Rim — ellipse from behind (thinner line for smaller rim)
+    // Rim — ellipse from behind (thicker for bigger rim)
     const rimG = this.add.graphics();
-    rimG.lineStyle(4, 0xff6b1a, 1);
+    rimG.lineStyle(6, 0xff6b1a, 1);
     rimG.strokeEllipse(this.hoopX, this.hoopY, rimRadius * 2, rimRadius * 0.55);
-    rimG.lineStyle(1.5, 0xff9a4a, 1);
+    rimG.lineStyle(2, 0xff9a4a, 1);
     rimG.strokeEllipse(this.hoopX, this.hoopY - 2, rimRadius * 2, rimRadius * 0.45);
 
     // Net
     const net = this.add.graphics();
-    net.lineStyle(1, 0xffffff, 0.7);
-    const netSegs = 8;
-    const netH = 18;
+    net.lineStyle(1.5, 0xffffff, 0.7);
+    const netSegs = 9;
+    const netH = 32;
     for (let i = 0; i <= netSegs; i++) {
       const t = i / netSegs;
       const topX = this.hoopX - rimRadius + 2 * rimRadius * t;
@@ -601,9 +601,9 @@ class CourtScene extends Phaser.Scene {
     this.rimRight = this.physics.add.staticImage(this.hoopX + rimRadius, this.hoopY, null).setVisible(false);
     this.rimRight.body.setCircle(5);
     this.rimRight.body.setOffset(-5, -5);
-    this.backboardBody = this.physics.add.staticImage(this.hoopX, this.hoopY - 32, null).setVisible(false);
-    this.backboardBody.body.setSize(bbW, 8);
-    this.backboardBody.body.setOffset(-bbW/2, 24);
+    this.backboardBody = this.physics.add.staticImage(this.hoopX, this.hoopY - 50, null).setVisible(false);
+    this.backboardBody.body.setSize(bbW, 10);
+    this.backboardBody.body.setOffset(-bbW/2, 42);
 
     // ====================================================================
     // PLAYER — bottom of screen, with strong perspective scaling
@@ -615,12 +615,12 @@ class CourtScene extends Phaser.Scene {
     this.depthT = 0;  // 0 at near edge, 1 at hoop
     this.shooter = this.add.image(this.shooterCx, this.shooterCy, char.key + '_idle');
     this.shooter.setOrigin(0.5, 1);
-    this.shooter.setScale(0.55);  // full size at the back of the court
+    this.shooter.setScale(0.40);  // full size at the back of the court (smaller for better proportion)
 
     // Breathing
     this.tweens.add({
       targets: this.shooter,
-      scaleY: { from: 0.55, to: 0.555 },
+      scaleY: { from: 0.40, to: 0.405 },
       duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
     });
 
@@ -771,19 +771,19 @@ class CourtScene extends Phaser.Scene {
     const W = this.W, H = this.H;
 
     // -- Layout: bottom strip ~120px tall, joystick left, shoot right --
-    const stripY = H - 120;
+    const stripY = H - 95;
     this.controlsStripY = stripY;
 
     // Subtle background strip for the controls (so it's clear where they are)
     const stripBg = this.add.graphics();
     stripBg.fillStyle(0x000000, 0.35);
-    stripBg.fillRect(0, stripY, W, 120);
+    stripBg.fillRect(0, stripY, W, 95);
     stripBg.setDepth(40);
 
     // ---- LEFT: Virtual joystick ----
-    const joyX = 90, joyY = stripY + 60;
-    const joyRadius = 50;       // outer ring (max drag)
-    const stickRadius = 26;     // inner stick
+    const joyX = 72, joyY = stripY + 47;
+    const joyRadius = 38;       // outer ring (max drag)
+    const stickRadius = 20;     // inner stick
     this.joyCenter = { x: joyX, y: joyY };
     this.joyRadius = joyRadius;
     this.joyActive = false;
@@ -809,8 +809,8 @@ class CourtScene extends Phaser.Scene {
     joyZone.on('pointerdown', (pointer) => this.onJoyDown(pointer));
 
     // ---- RIGHT: Shoot button + aim swipe area ----
-    const shootX = W - 90, shootY = stripY + 60;
-    const shootRadius = 50;
+    const shootX = W - 72, shootY = stripY + 47;
+    const shootRadius = 38;
     this.shootCenter = { x: shootX, y: shootY };
     this.shootRadius = shootRadius;
     this.shootActive = false;
@@ -824,7 +824,7 @@ class CourtScene extends Phaser.Scene {
 
     // SHOOT label
     this.shootLabel = this.add.text(shootX, shootY, 'SHOOT', {
-      fontFamily: 'Bungee', fontSize: '13px', color: '#ffffff'
+      fontFamily: 'Bungee', fontSize: '11px', color: '#ffffff'
     }).setOrigin(0.5).setDepth(42);
 
     // Touch area for shoot
@@ -852,12 +852,12 @@ class CourtScene extends Phaser.Scene {
     const g = this.joyStick;
     g.clear();
     g.fillStyle(this.character.color, 0.85);
-    g.fillCircle(x, y, 26);
+    g.fillCircle(x, y, 20);
     g.lineStyle(2, 0xffffff, 0.7);
-    g.strokeCircle(x, y, 26);
+    g.strokeCircle(x, y, 20);
     // Inner dot
     g.fillStyle(0xffffff, 0.6);
-    g.fillCircle(x, y, 6);
+    g.fillCircle(x, y, 5);
   }
 
   drawShootButton(power) {
@@ -1179,8 +1179,8 @@ class CourtScene extends Phaser.Scene {
       this.depthT = depthT;
 
       // Player scales DRAMATICALLY with depth — gives a strong "zoom"-ish feel.
-      // At the back: full size (0.55). Right at the hoop: very small (0.18).
-      const playerScale = Phaser.Math.Linear(0.55, 0.18, depthT);
+      // At the back: smaller default (0.40). Right at the hoop: tiny (0.14).
+      const playerScale = Phaser.Math.Linear(0.40, 0.14, depthT);
 
       this.shooter.x = this.shooterCx;
       this.shooter.y = this.shooterCy;
@@ -1192,7 +1192,7 @@ class CourtScene extends Phaser.Scene {
 
       // Ball spawn follows player, scaled to roughly hand-height
       this.ballSpawn.x = this.shooterCx;
-      this.ballSpawn.y = this.shooterCy - 200 * playerScale / 0.55;
+      this.ballSpawn.y = this.shooterCy - 200 * playerScale / 0.40;
 
       // ---- DRIBBLE: while moving, show a bouncing ball next to the player ----
       const isMoving = Math.abs(this.joyVector.x) > 0.1 || Math.abs(this.joyVector.y) > 0.1;
@@ -1205,15 +1205,15 @@ class CourtScene extends Phaser.Scene {
         // Bounce: ball oscillates between hand-height and ground
         const bounceCycle = (this.time.now / 1000) * 4;   // 4 bounces per second
         const bounceT = Math.abs(Math.sin(bounceCycle));   // 0..1
-        const handY = this.shooterCy - 110 * playerScale / 0.55;
+        const handY = this.shooterCy - 110 * playerScale / 0.40;
         const groundY = this.shooterCy - 5;
-        this.dribbleBall.x = this.shooterCx + 35 * playerScale / 0.55;  // beside the player
+        this.dribbleBall.x = this.shooterCx + 35 * playerScale / 0.40;  // beside the player
         this.dribbleBall.y = Phaser.Math.Linear(groundY, handY, bounceT);
-        this.dribbleBall.setScale(0.5 * playerScale / 0.55);
+        this.dribbleBall.setScale(0.5 * playerScale / 0.40);
         this.dribbleBall.setVisible(true);
         // Hide the held ball on the sprite by hiding nothing — sprite includes it.
         // But we DO want a slight player vertical bob for "running" feel
-        this.shooter.y = this.shooterCy - Math.abs(Math.sin(bounceCycle * 2)) * 2 * playerScale / 0.55;
+        this.shooter.y = this.shooterCy - Math.abs(Math.sin(bounceCycle * 2)) * 2 * playerScale / 0.40;
       } else if (this.dribbleBall) {
         this.dribbleBall.setVisible(false);
       }
