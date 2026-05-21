@@ -606,20 +606,21 @@ class CourtScene extends Phaser.Scene {
     this.backboardBody.body.setOffset(-bbW/2, 24);
 
     // ====================================================================
-    // PLAYER — bottom of screen, smaller (zoomed out feel)
+    // PLAYER — bottom of screen, with strong perspective scaling
     // ====================================================================
     this.shooterCx = cx;
-    this.shooterCy = H - 30;  // feet at bottom
+    this.shooterCy = H - 30;  // feet at bottom (= "near" depth)
     this.shooterMinX = 80;
     this.shooterMaxX = W - 80;
+    this.depthT = 0;  // 0 at near edge, 1 at hoop
     this.shooter = this.add.image(this.shooterCx, this.shooterCy, char.key + '_idle');
     this.shooter.setOrigin(0.5, 1);
-    this.shooter.setScale(0.42);  // smaller for zoomed-out feel
+    this.shooter.setScale(0.55);  // full size at the back of the court
 
     // Breathing
     this.tweens.add({
       targets: this.shooter,
-      scaleY: { from: 0.42, to: 0.425 },
+      scaleY: { from: 0.55, to: 0.555 },
       duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
     });
 
@@ -965,12 +966,15 @@ class CourtScene extends Phaser.Scene {
     // AIM SLIGHTLY ABOVE THE RIM so the ball falls DOWN through it (= scores)
     const targetY = this.hoopY - 30;
 
-    // Account for player's current depth — when farther from camera (higher y up),
-    // the player is closer to the hoop, so less flight needed
-    const distanceFactor = (this.shooterCy - (this.H - 320)) / 290;  // 0=close to hoop, 1=at near baseline
-    // PUNCHIER shots — guarantees the ball reaches the hoop even on low power
-    // Range: 0.50s on low power, 0.32s on max power
-    const flightTime = 0.50 - 0.18 * this.power - 0.04 * (1 - distanceFactor);
+    // Account for player's current depth — when closer to hoop, less power needed
+    // depthT: 0 = far from hoop (back of court), 1 = right under hoop
+    const depthT = this.depthT || 0;
+
+    // FlightTime scales with distance — close shots are very fast (soft layup),
+    // far shots take longer (full strength jumper).
+    // Also still scaled a bit by the held-power, but distance dominates.
+    const baseFlightTime = Phaser.Math.Linear(0.60, 0.25, depthT);  // 0.60s far, 0.25s under hoop
+    const flightTime = baseFlightTime - 0.08 * this.power;
 
     const g = this.physics.world.gravity.y;
     const dx = targetX - this.ballSpawn.x;
@@ -978,7 +982,7 @@ class CourtScene extends Phaser.Scene {
     const vx = dx / flightTime;
     const vy = (dy - 0.5 * g * flightTime * flightTime) / flightTime;
     // Smaller power-based deviation so shots feel more controlled
-    const powerFudge = (this.power - 0.60) * 0.12;
+    const powerFudge = (this.power - 0.60) * 0.10;
     const finalVx = vx * (1 + powerFudge);
     const finalVy = vy * (1 + powerFudge);
 
@@ -1151,35 +1155,71 @@ class CourtScene extends Phaser.Scene {
     }
 
     // ---- PLAYER MOVEMENT — joystick (X and Y) ----
-    // Player can move in any direction WHILE charging a shot
+    // Player can move freely on the court, all the way up to (and under) the hoop.
+    // Strong perspective scaling fakes a "zoom" effect as you approach the hoop.
     if (this.state === 'AIMING' || this.state === 'CHARGING') {
-      const speedX = 200;
-      const speedY = 140;  // a bit slower forward/back for nicer feel
+      const speedX = 220;
+      const speedY = 160;
       const moveX = this.joyVector.x * speedX * dts;
       const moveY = this.joyVector.y * speedY * dts;
-      // Apply, clamped to a movement area (player can move around on the court)
+
+      // Define the movement range
+      // - back of court (near camera): shooterCy = H - 30  (full size, 0.55 scale)
+      // - under the hoop (far from camera): shooterCy = hoopY + 70  (tiny, 0.18 scale)
+      const nearY = this.H - 30;
+      const farY  = this.hoopY + 70;
+
       const newX = Phaser.Math.Clamp(this.shooterCx + moveX, this.shooterMinX, this.shooterMaxX);
-      const newY = Phaser.Math.Clamp(
-        this.shooterCy + moveY,
-        this.H - 320,    // can step forward (toward hoop)
-        this.H - 30      // bottom limit
-      );
+      const newY = Phaser.Math.Clamp(this.shooterCy + moveY, farY, nearY);
       this.shooterCx = newX;
       this.shooterCy = newY;
+
+      // depthT: 0 at the near edge, 1 at the hoop
+      const depthT = Phaser.Math.Clamp((nearY - this.shooterCy) / (nearY - farY), 0, 1);
+      this.depthT = depthT;
+
+      // Player scales DRAMATICALLY with depth — gives a strong "zoom"-ish feel.
+      // At the back: full size (0.55). Right at the hoop: very small (0.18).
+      const playerScale = Phaser.Math.Linear(0.55, 0.18, depthT);
+
       this.shooter.x = this.shooterCx;
       this.shooter.y = this.shooterCy;
-      this.shooterShadow.x = this.shooterCx;
-      this.shooterShadow.y = this.shooterCy + 20;
-      // Shadow scales with depth (further away = smaller)
-      const depthT = (this.H - 30 - this.shooterCy) / 290;
-      this.shooterShadow.scaleX = 1 - depthT * 0.4;
-      this.shooterShadow.scaleY = 1 - depthT * 0.4;
-      // Player also scales with depth slightly
-      const playerScale = 0.42 * (1 - depthT * 0.25);
       this.shooter.setScale(playerScale);
-      // Update ball spawn to follow player
+
+      this.shooterShadow.x = this.shooterCx;
+      this.shooterShadow.y = this.shooterCy + 18 * (1 - depthT * 0.7);
+      this.shooterShadow.setScale(Phaser.Math.Linear(1, 0.3, depthT));
+
+      // Ball spawn follows player, scaled to roughly hand-height
       this.ballSpawn.x = this.shooterCx;
-      this.ballSpawn.y = this.shooterCy - 200 * (1 - depthT * 0.25);
+      this.ballSpawn.y = this.shooterCy - 200 * playerScale / 0.55;
+
+      // ---- DRIBBLE: while moving, show a bouncing ball next to the player ----
+      const isMoving = Math.abs(this.joyVector.x) > 0.1 || Math.abs(this.joyVector.y) > 0.1;
+      if (isMoving) {
+        if (!this.dribbleBall) {
+          // Create the dribble ball on demand (re-uses the ball texture)
+          this.dribbleBall = this.add.image(this.shooterCx, this.shooterCy - 80, 'ballTex');
+          this.dribbleBall.setDepth(5);
+        }
+        // Bounce: ball oscillates between hand-height and ground
+        const bounceCycle = (this.time.now / 1000) * 4;   // 4 bounces per second
+        const bounceT = Math.abs(Math.sin(bounceCycle));   // 0..1
+        const handY = this.shooterCy - 110 * playerScale / 0.55;
+        const groundY = this.shooterCy - 5;
+        this.dribbleBall.x = this.shooterCx + 35 * playerScale / 0.55;  // beside the player
+        this.dribbleBall.y = Phaser.Math.Linear(groundY, handY, bounceT);
+        this.dribbleBall.setScale(0.5 * playerScale / 0.55);
+        this.dribbleBall.setVisible(true);
+        // Hide the held ball on the sprite by hiding nothing — sprite includes it.
+        // But we DO want a slight player vertical bob for "running" feel
+        this.shooter.y = this.shooterCy - Math.abs(Math.sin(bounceCycle * 2)) * 2 * playerScale / 0.55;
+      } else if (this.dribbleBall) {
+        this.dribbleBall.setVisible(false);
+      }
+    } else if (this.dribbleBall) {
+      // Hide dribble ball when not aiming (during flight, gameover, etc.)
+      this.dribbleBall.setVisible(false);
     }
 
     // ---- POWER CHARGING ----
