@@ -383,7 +383,7 @@ class CourtScene extends Phaser.Scene {
     // ARENA BACKGROUND — bleachers, crowd, lights (drawn BEFORE the floor)
     // ====================================================================
     const cx = W / 2;
-    const horizonY = 300;  // where floor meets bleachers (just below the distant hoop)
+    const horizonY = 260;  // where floor meets bleachers (just below the distant hoop)
 
     // --- Sky / arena ceiling: deep navy with a subtle vignette ---
     const skyG = this.add.graphics();
@@ -416,10 +416,10 @@ class CourtScene extends Phaser.Scene {
     const bleachersG = this.add.graphics();
     // Back wall structure
     bleachersG.fillStyle(0x1a1a2a, 1);
-    bleachersG.fillRect(0, 130, W, horizonY - 130);
+    bleachersG.fillRect(0, 90, W, horizonY - 90);
     // Bleacher tiers (horizontal bands receding upward = closer)
     for (let row = 0; row < 6; row++) {
-      const y = 140 + row * 26;
+      const y = 100 + row * 26;
       const shade = 0x1a1a2a + row * 0x040406;
       bleachersG.fillStyle(shade, 1);
       bleachersG.fillRect(0, y, W, 22);
@@ -431,7 +431,7 @@ class CourtScene extends Phaser.Scene {
     this.crowdDots = [];
     const crowdColors = [0xff4466, 0xffd166, 0x4ade80, 0x60a5fa, 0xa78bfa, 0xfb7185, 0xfacc15];
     for (let row = 0; row < 6; row++) {
-      const baseY = 146 + row * 26;
+      const baseY = 106 + row * 26;
       const density = 45 + row * 8;  // more density in rows closer to camera
       for (let i = 0; i < density; i++) {
         const x = Math.random() * W;
@@ -446,20 +446,20 @@ class CourtScene extends Phaser.Scene {
     const banners = this.add.graphics();
     // Left side panel — at the floor edge
     banners.fillStyle(0x0a0a0f, 1);
-    banners.fillRect(0, 264, 50, 34);
+    banners.fillRect(0, 224, 50, 34);
     banners.fillStyle(char.color, 0.85);
-    banners.fillRect(4, 268, 42, 26);
+    banners.fillRect(4, 228, 42, 26);
     // Right side panel
     banners.fillStyle(0x0a0a0f, 1);
-    banners.fillRect(W - 50, 264, 50, 34);
+    banners.fillRect(W - 50, 224, 50, 34);
     banners.fillStyle(char.color, 0.85);
-    banners.fillRect(W - 46, 268, 42, 26);
+    banners.fillRect(W - 46, 228, 42, 26);
 
     // Banner text — "SS" logo
-    this.add.text(25, 281, 'SS', {
+    this.add.text(25, 241, 'SS', {
       fontFamily: 'Bungee', fontSize: '14px', color: '#0a0a0f'
     }).setOrigin(0.5);
-    this.add.text(W - 25, 281, 'SS', {
+    this.add.text(W - 25, 241, 'SS', {
       fontFamily: 'Bungee', fontSize: '14px', color: '#0a0a0f'
     }).setOrigin(0.5);
 
@@ -544,7 +544,7 @@ class CourtScene extends Phaser.Scene {
     // HOOP — small, far away, upper area
     // ====================================================================
     this.hoopX = cx;
-    this.hoopY = 240;
+    this.hoopY = 200;
     const rimRadius = 22;
 
     // Pole
@@ -968,17 +968,17 @@ class CourtScene extends Phaser.Scene {
     // Account for player's current depth — when farther from camera (higher y up),
     // the player is closer to the hoop, so less flight needed
     const distanceFactor = (this.shooterCy - (this.H - 320)) / 290;  // 0=close to hoop, 1=at near baseline
-    // Punchier shots — bigger velocity range
-    // Range: 0.60s on low power, 0.40s on max power
-    const flightTime = 0.60 - 0.20 * this.power - 0.05 * (1 - distanceFactor);
+    // PUNCHIER shots — guarantees the ball reaches the hoop even on low power
+    // Range: 0.50s on low power, 0.32s on max power
+    const flightTime = 0.50 - 0.18 * this.power - 0.04 * (1 - distanceFactor);
 
     const g = this.physics.world.gravity.y;
     const dx = targetX - this.ballSpawn.x;
     const dy = targetY - this.ballSpawn.y;
     const vx = dx / flightTime;
     const vy = (dy - 0.5 * g * flightTime * flightTime) / flightTime;
-    // Power-based deviation: low power undershoots, high power overshoots
-    const powerFudge = (this.power - 0.65) * 0.18;
+    // Smaller power-based deviation so shots feel more controlled
+    const powerFudge = (this.power - 0.60) * 0.12;
     const finalVx = vx * (1 + powerFudge);
     const finalVy = vy * (1 + powerFudge);
 
