@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Street Shot 2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / social preview -->
+<meta property="og:title" content="Street Shot 2.0">
+<meta property="og:description" content="Arcade basketball — pick your baller, take the court.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #0a0a0f;
+    overflow: hidden;
+    font-family: 'Rubik', sans-serif;
+    /* Prevent pull-to-refresh and overscroll on mobile */
+    overscroll-behavior: none;
+    /* Disable touch callout & user-select for game feel */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 60%),
+      repeating-linear-gradient(45deg, transparent 0 20px, rgba(255,255,255,0.01) 20px 21px);
+  }
+  #game {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    width: min(100vw, 540px);
+    height: min(100vh, 960px);
+    aspect-ratio: 540 / 960;
+  }
+  #game canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  /* On mobile, remove border-radius and shadow for a fullscreen feel */
+  @media (max-width: 540px) {
+    #game {
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
